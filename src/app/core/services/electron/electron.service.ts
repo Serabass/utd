@@ -27,6 +27,10 @@ export abstract class Entry {
   public dateModified: string;
   public parentDir: Directory;
 
+  public downloading = false;
+  public checkingMD5 = false;
+  public md5Checked = false;
+
   public onProgress: EventEmitter<any> = new EventEmitter();
 
   public get isDir() {
@@ -43,6 +47,12 @@ export abstract class Entry {
     this.md5File = window.require('md5-file');
   }
 
+  public get localPath() {
+    let dirPath = this.parentDir ? this.parentDir.path : "/";
+
+    return this.p.join(process.cwd(), "dl", dirPath, this.name);
+  }
+
   public get path() {
     if (!this.parentDir) {
       return this.name;
@@ -50,12 +60,14 @@ export abstract class Entry {
     return this.p.join(this.parentDir.path, this.name);
   }
 
+  public get exists() {
+    return this.fs.existsSync(this.localPath);
+  }
+
   public abstract download(): Promise<boolean>;
 }
 
 export class File extends Entry {
-  public downloading = false;
-  public md5Checked = false;
   public async getMD5(): Promise<string> {
     let dirPath = this.parentDir
       ? encodeURIComponent(this.parentDir.path)
@@ -70,12 +82,6 @@ export class File extends Entry {
     );
   }
 
-  public get localPath() {
-    let dirPath = this.parentDir ? this.parentDir.path : "/";
-
-    return this.p.join(process.cwd(), "dl", dirPath, this.name);
-  }
-
   public get url() {
     let dirPath = this.parentDir
       ? encodeURIComponent(this.parentDir.path)
@@ -87,6 +93,7 @@ export class File extends Entry {
   }
 
   public async checkMD5(): Promise<boolean> {
+    this.checkingMD5 = true;
     const dirPath = this.p.dirname(this.localPath);
     if (!this.fs.existsSync(dirPath)) {
       return false;
@@ -96,6 +103,7 @@ export class File extends Entry {
     }
     let remoteMD5 = await this.getMD5();
     let localMD5 = await this.md5File(this.localPath);
+    this.checkingMD5 = false;
     return remoteMD5 === localMD5;
   }
 
@@ -271,7 +279,7 @@ export class ElectronService {
   }
 
   public load(p: string) {
-    return Directory.at('/GameTypes/UT2004Extreme/').fetch();
+    return Directory.at(p).fetch();
   }
 }
 

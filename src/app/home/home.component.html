@@ -7,8 +7,22 @@
 
       <ul nz-list [nzDataSource]="a.children" nzBordered nzSize="large">
         <li nz-list-item *ngFor="let entry of a.children" nzNoFlex>
+
+          <nz-list-item-meta
+            [nzDescription]="entry.size.total | nzBytes"
+          >
+            <nz-list-item-meta-title>
+              <i nz-icon nzType="plus" nzTheme="outline" *ngIf="entry.isDir"></i>
+              <i nz-icon nzType="file" nzTheme="outline" *ngIf="!entry.isDir"></i>
+              {{ entry.name }}
+              <i nz-icon nzType="check" nzTheme="outline" *ngIf="entry.exists"></i>
+              <nz-progress [nzPercent]="getPercent(entry.size)" *ngIf="entry.downloading"></nz-progress>
+
+            </nz-list-item-meta-title>
+          </nz-list-item-meta>
+
           <ul nz-list-item-actions>
-            <nz-list-item-action>
+            <nz-list-item-action *ngIf="entry.exists">
               <a (click)="checkMd5(entry)" *ngIf="!entry.md5Checked">Check MD5</a>
               <span *ngIf="entry.md5Checked">MD5 checked</span>
             </nz-list-item-action>
@@ -21,9 +35,7 @@
               Downloading... {{ entry.size | json }}
             </nz-list-item-action>
           </ul>
-          {{ entry.name }}
-          <nz-progress [nzPercent]="getPercent(entry.size)" *ngIf="entry.downloading"></nz-progress>
-        </li>
+       </li>
       </ul>
     </section>
   </section>

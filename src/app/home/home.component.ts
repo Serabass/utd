@@ -1,6 +1,7 @@
 import {ApplicationRef, Component, OnInit} from '@angular/core';
-import { Router } from '@angular/router';
+import {Router} from '@angular/router';
 import {Directory, ElectronService, Entry, EntrySize, File} from '../core/services';
+
 // import '../sandbox';
 
 @Component({
@@ -14,10 +15,11 @@ export class HomeComponent implements OnInit {
 
   constructor(private router: Router,
               private el: ElectronService,
-              private app: ApplicationRef) { }
+              private app: ApplicationRef) {
+  }
 
   async ngOnInit(): Promise<void> {
-    this.a = await this.el.load('/GameTypes/UT2004Extreme/');
+    this.a = await this.el.load('/GameTypes/');
   }
 
   public async checkMd5(entry: File) {
