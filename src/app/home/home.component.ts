@@ -1,6 +1,6 @@
 import {ApplicationRef, Component, OnInit} from '@angular/core';
 import { Router } from '@angular/router';
-import {ElectronService} from '../core/services';
+import {Directory, ElectronService, Entry, EntrySize, File} from '../core/services';
 // import '../sandbox';
 
 @Component({
@@ -10,7 +10,7 @@ import {ElectronService} from '../core/services';
 })
 export class HomeComponent implements OnInit {
 
-  public a: any;
+  public a: Directory;
 
   constructor(private router: Router,
               private el: ElectronService,
@@ -20,21 +20,21 @@ export class HomeComponent implements OnInit {
     this.a = await this.el.load('/GameTypes/UT2004Extreme/');
   }
 
-  public async checkMd5(entry: any) {
+  public async checkMd5(entry: File) {
     entry.md5Checked = await entry.checkMD5();
     this.app.tick();
   }
 
-  public async download(entry: any) {
+  public async download(entry: Entry) {
     this.app.tick();
-    entry.on('progress', () => {
-      debugger;
+    entry.onProgress.subscribe(() => {
+      this.app.tick();
     });
     await entry.download();
     this.app.tick();
   }
 
-  public getPercent(size: any) {
+  public getPercent(size: EntrySize) {
     return (size.transferred / size.total) * 100;
   }
 }
