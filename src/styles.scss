@@ -1,3 +1,6 @@
+@import "~ng-zorro-antd/style/index.min.css"; /* Import base styles */
+@import "~ng-zorro-antd/ng-zorro-antd.css"; /* Import one component's styles */
+
 /* You can add global styles to this file, and also import other style files */
 html, body {
   margin: 0;
@@ -46,4 +49,8 @@ html, body {
       transition: all 0.4s ease 0s;
     }
   }
+}
+
+.p-20 {
+  padding: 20px;
 }

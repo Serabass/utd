@@ -1,10 +1,9 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 
 // If you import a module but never use any of the imported values other than as TypeScript types,
 // the resulting javascript file will look as if you never imported the module at all.
-import { ipcRenderer, webFrame, remote } from 'electron';
+import {ipcRenderer, remote, webFrame} from 'electron';
 import * as childProcess from 'child_process';
-import * as fs from 'fs';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +13,13 @@ export class ElectronService {
   webFrame: typeof webFrame;
   remote: typeof remote;
   childProcess: typeof childProcess;
-  fs: typeof fs;
+  fs: any;
+  cheerio: any;
+  r: any;
+  path: any;
+  rp: any;
+  mkdirp: any;
+  md5File: any;
 
   get isElectron(): boolean {
     return !!(window && window.process && window.process.type);
@@ -31,6 +36,221 @@ export class ElectronService {
 
       this.childProcess = window.require('child_process');
       this.fs = window.require('fs');
+      this.path = window.require('path');
+      this.cheerio = window.require('cheerio');
+      this.r = window.require('request-promise');
+      this.rp = window.require('request-progress');
+      this.mkdirp = window.require('mkdirp');
+      this.md5File = window.require('md5-file');
     }
   }
+
+  public load(p: string) {
+    let _this = this;
+    function delay(interval: number) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, interval);
+      });
+    }
+
+    abstract class Entry {
+      public type: string;
+      public size: {total: number, transferred: number};
+      public dateModified: string;
+      public parentDir: Directory;
+
+      public get isDir() {
+        return this.type === "[dir]";
+      }
+
+      public constructor(public name: string) {}
+
+      public get path() {
+        if (!this.parentDir) {
+          return this.name;
+        }
+        return _this.path.join(this.parentDir.path, this.name);
+      }
+
+      public abstract download(): Promise<boolean>;
+    }
+
+    class File extends Entry {
+      public downloading = false;
+      public async getMD5(): Promise<string> {
+        let dirPath = this.parentDir
+          ? encodeURIComponent(this.parentDir.path)
+          : "/";
+        return await _this.r(
+          `http://unrealtournament.99.free.fr/utfiles/index.php?dir=${dirPath}&md5=${encodeURIComponent(
+            this.name
+          )}`,
+          {
+            mode: 'no-cors'
+          },
+        );
+      }
+
+      public get localPath() {
+        let dirPath = this.parentDir ? this.parentDir.path : "/";
+
+        return _this.path.join(process.cwd(), "dl", dirPath, this.name);
+      }
+
+      public get url() {
+        let dirPath = this.parentDir
+          ? encodeURIComponent(this.parentDir.path)
+          : "/";
+
+        return `http://unrealtournament.99.free.fr/utfiles/index.php?dir=${dirPath}&file=${encodeURIComponent(
+          this.name
+        )}`;
+      }
+
+      public async checkMD5(): Promise<boolean> {
+        const dirPath = _this.path.dirname(this.localPath);
+        if (!_this.fs.existsSync(dirPath)) {
+          return false;
+        }
+        if (!_this.fs.existsSync(this.localPath)) {
+          return false;
+        }
+        let remoteMD5 = await this.getMD5();
+        let localMD5 = await _this.md5File(this.localPath);
+        return remoteMD5 === localMD5;
+      }
+
+      public async download(): Promise<boolean> {
+        const dirPath = _this.path.dirname(this.localPath);
+
+        if (!_this.fs.existsSync(dirPath)) {
+          await _this.mkdirp(dirPath);
+        }
+
+        if (_this.fs.existsSync(this.localPath)) {
+          let remoteMD5 = await this.getMD5();
+          let localMD5 = await _this.md5File(this.localPath);
+
+          if (remoteMD5 === localMD5) {
+            return false;
+          }
+        }
+
+        await delay(1000);
+
+        return new Promise<boolean>((resolve, reject) => {
+          // let spinner = ora(`Downloading ${this.path}`).start();
+          _this.rp(_this.r(this.url))
+            .on("progress", (state) => {
+              this.downloading = true;
+              this.size = state.size;
+            })
+            .on("error", (err) => {
+              // spinner.stop();
+              this.downloading = false;
+              console.error(err);
+              reject(err);
+            })
+            .on("end", () => {
+              // spinner.stop();
+              this.downloading = false;
+              resolve(true);
+            })
+            .pipe(_this.fs.createWriteStream(this.localPath));
+        });
+      }
+    }
+
+    class Directory extends Entry {
+      public fileCount: number;
+
+      public children: Entry[] = [];
+
+      public static at(path: string) {
+        return new Directory(path);
+      }
+
+      public get url() {
+        return `http://unrealtournament.99.free.fr/utfiles/index.php?dir=${encodeURIComponent(
+          this.path
+        )}`;
+      }
+
+      public async download() {
+        for (let ch of this.children) {
+          if (!ch.isDir) {
+            await ch.download();
+          }
+        }
+
+        return true;
+      }
+
+      public async fetchCached(url: string) {
+        let result;
+        if (!localStorage.getItem(url)) {
+          result = await _this.r(this.url);
+          localStorage.setItem(url, result);
+        } else {
+          result = localStorage.getItem(url);
+        }
+        return result;
+      }
+
+      public async fetch() {
+        let html = await this.fetchCached(this.url);
+        let $ = _this.cheerio.load(html);
+        let table = $("body > table:eq(0)");
+        let rows = table.find("tr.dark_row, tr.light_row").toArray();
+
+        for (let row of rows) {
+          let $tr = _this.cheerio(row);
+          let type = $tr.find("td img[alt]").attr("alt");
+          let name = $tr.find("td:eq(0) a:first").text().trim();
+          let sizeStr = $tr.find("td:eq(1) a").attr("title");
+          let dateModified = $tr.find("td:eq(2) a").attr("title");
+          if (name === "Parent Directory") {
+            continue;
+          }
+          let [, size] = sizeStr.match(/^.+?\n([\d,]+)\s+bytes\s+\(.+?\)$/);
+          let sizeVal = parseInt(size.replace(/,/g, ""));
+
+          if (type === "[dir]") {
+            let tdText = $tr.find("td:eq(0)").text();
+            let m = tdText.match(/\[(\d+) Files?\]$/);
+            let [, fileCount] = m;
+            let dir = new Directory(name.trim());
+            dir.fileCount = parseInt(fileCount);
+            dir.size = {total: sizeVal, transferred: 0};
+            dir.dateModified = dateModified;
+            dir.parentDir = this;
+            dir.type = type;
+            // await dir.fetch();
+            this.children.push(dir);
+          } else {
+            let m = name.match(/^(.+?)(?:\s*\[get md5sum\])?$/);
+            if (!m) {
+              throw new Error(`Match error: ${name}`);
+            }
+
+            let [, filename] = m;
+            let file = new File(filename.trim());
+            file.size = {total: sizeVal, transferred: 0};
+            file.dateModified = dateModified;
+            file.parentDir = this;
+            file.type = type;
+            // await file.download();
+            this.children.push(file);
+          }
+        }
+
+        return this;
+      }
+    }
+
+    return Directory.at('/Admin/').fetch();
+  }
+
+
 }
+
