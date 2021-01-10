@@ -1,6 +1,6 @@
 <nz-content class="p-20">
   <section nz-row>
-    <section nz-col *ngIf="a">
+    <section nz-col [nzMd]="24" *ngIf="a">
       <h2>
         {{ a.name }}
       </h2>
@@ -16,7 +16,9 @@
               <i nz-icon nzType="file" nzTheme="outline" *ngIf="!entry.isDir"></i>
               {{ entry.name }}
               <i nz-icon nzType="check" nzTheme="outline" *ngIf="entry.exists"></i>
-              <nz-progress [nzPercent]="getPercent(entry.size)" *ngIf="entry.downloading"></nz-progress>
+              <nz-progress [nzPercent]="getPercent(entry.size)"
+                           [nzFormat]="formatPercent"
+                           *ngIf="entry.downloading"></nz-progress>
 
             </nz-list-item-meta-title>
           </nz-list-item-meta>

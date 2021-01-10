@@ -39,4 +39,8 @@ export class HomeComponent implements OnInit {
   public getPercent(size: EntrySize) {
     return (size.transferred / size.total) * 100;
   }
+
+  public formatPercent(percent: number) {
+    return `${percent.toFixed(2)}%`;
+  }
 }
