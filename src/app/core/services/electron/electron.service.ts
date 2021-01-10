@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import {EventEmitter, Injectable} from '@angular/core';
 
 // If you import a module but never use any of the imported values other than as TypeScript types,
 // the resulting javascript file will look as if you never imported the module at all.
@@ -53,7 +53,7 @@ export class ElectronService {
       });
     }
 
-    abstract class Entry {
+    abstract class Entry extends EventEmitter {
       public type: string;
       public size: {total: number, transferred: number};
       public dateModified: string;
@@ -63,7 +63,9 @@ export class ElectronService {
         return this.type === "[dir]";
       }
 
-      public constructor(public name: string) {}
+      public constructor(public name: string) {
+        super();
+      }
 
       public get path() {
         if (!this.parentDir) {
@@ -136,6 +138,7 @@ export class ElectronService {
           }
         }
 
+        this.downloading = true;
         await delay(1000);
 
         return new Promise<boolean>((resolve, reject) => {
@@ -144,6 +147,7 @@ export class ElectronService {
             .on("progress", (state) => {
               this.downloading = true;
               this.size = state.size;
+              this.emit('progress');
             })
             .on("error", (err) => {
               // spinner.stop();
@@ -248,9 +252,7 @@ export class ElectronService {
       }
     }
 
-    return Directory.at('/Admin/').fetch();
+    return Directory.at('/GameTypes/UT2004Extreme/').fetch();
   }
-
-
 }
 

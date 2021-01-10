@@ -17,7 +17,7 @@ export class HomeComponent implements OnInit {
               private app: ApplicationRef) { }
 
   async ngOnInit(): Promise<void> {
-    this.a = await this.el.load('/Admin/');
+    this.a = await this.el.load('/GameTypes/UT2004Extreme/');
   }
 
   public async checkMd5(entry: any) {
@@ -26,7 +26,15 @@ export class HomeComponent implements OnInit {
   }
 
   public async download(entry: any) {
+    this.app.tick();
+    entry.on('progress', () => {
+      debugger;
+    });
     await entry.download();
     this.app.tick();
+  }
+
+  public getPercent(size: any) {
+    return (size.transferred / size.total) * 100;
   }
 }

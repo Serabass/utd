@@ -21,7 +21,8 @@
               Downloading... {{ entry.size | json }}
             </nz-list-item-action>
           </ul>
-          {{ entry.name }} {{ entry.downloading }}
+          {{ entry.name }}
+          <nz-progress [nzPercent]="getPercent(entry.size)" *ngIf="entry.downloading"></nz-progress>
         </li>
       </ul>
     </section>
