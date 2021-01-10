@@ -13,16 +13,19 @@
               {{ entry.name }}
               <i nz-icon nzType="check" nzTheme="outline" *ngIf="entry.exists"></i>
               <nz-progress [nzPercent]="getPercent(entry.size)"
-                           [nzFormat]="formatPercent"
-                           *ngIf="entry.downloading"></nz-progress>
+                           [nzFormat]="formatPercent"></nz-progress>
 
             </nz-list-item-meta-title>
           </nz-list-item-meta>
 
           <ul nz-list-item-actions>
             <nz-list-item-action *ngIf="entry.exists">
-              <a (click)="checkMd5(entry)" *ngIf="!entry.md5Checked">Check MD5</a>
-              <span *ngIf="entry.md5Checked">MD5 checked</span>
+              <a (click)="checkMd5(entry)" *ngIf="!entry.md5Checked">
+                <i nz-icon [nzType]="'question-circle'" [nzTheme]="'twotone'" [nzTwotoneColor]="'yellow'"></i>
+              </a>
+              <span *ngIf="entry.md5Checked">
+                <i nz-icon [nzType]="'check-circle'" [nzTheme]="'twotone'" [nzTwotoneColor]="'green'"></i>
+              </span>
             </nz-list-item-action>
             <nz-list-item-action *ngIf="!entry.downloading && !entry.exists">
               <a (click)="download(entry)" *ngIf="!entry.md5Checked" nz-tooltip nzTooltipTitle="Download">

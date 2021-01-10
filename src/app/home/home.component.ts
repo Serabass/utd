@@ -19,7 +19,7 @@ export class HomeComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.a = await this.el.load('/GameTypes/');
+    this.a = await this.el.load('/Nexgen/');
   }
 
   public async checkMd5(entry: File) {
@@ -33,6 +33,7 @@ export class HomeComponent implements OnInit {
       this.app.tick();
     });
     await entry.download();
+    await this.checkMd5(entry as File);
     this.app.tick();
   }
 
