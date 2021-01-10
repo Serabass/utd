@@ -1,10 +1,6 @@
 <nz-content class="p-20">
   <section nz-row>
-    <section nz-col [nzMd]="24" *ngIf="a">
-      <h2>
-        {{ a.name }}
-      </h2>
-
+    <section nz-col [nzMd]="20" [nzOffset]="2" *ngIf="a">
       <ul nz-list [nzDataSource]="a.children" nzBordered nzSize="large">
         <li nz-list-item *ngFor="let entry of a.children" nzNoFlex>
 
@@ -28,13 +24,13 @@
               <a (click)="checkMd5(entry)" *ngIf="!entry.md5Checked">Check MD5</a>
               <span *ngIf="entry.md5Checked">MD5 checked</span>
             </nz-list-item-action>
-            <nz-list-item-action *ngIf="!entry.downloading">
-              <a (click)="download(entry)" *ngIf="!entry.md5Checked">
-                Download
+            <nz-list-item-action *ngIf="!entry.downloading && !entry.exists">
+              <a (click)="download(entry)" *ngIf="!entry.md5Checked" nz-tooltip nzTooltipTitle="Download">
+                <i nz-icon nzType="download" nzTheme="outline"></i>
               </a>
             </nz-list-item-action>
             <nz-list-item-action *ngIf="entry.downloading">
-              Downloading... {{ entry.size | json }}
+              Downloading...
             </nz-list-item-action>
           </ul>
        </li>
